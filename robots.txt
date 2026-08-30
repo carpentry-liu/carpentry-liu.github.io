@@ -1,0 +1,5 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://carpentry-liu.github.io/sitemap.xml
+
