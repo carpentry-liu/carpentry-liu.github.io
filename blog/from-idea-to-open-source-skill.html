@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#fafafa">
+  <meta name="description" content="用 6 个真实项目复盘：Agent Skill 如何从一次性 Prompt 变成可运行、可验证、可复用的工程资产。">
+  <meta name="author" content="carpentry-liu">
+  <meta property="og:type" content="article">
+  <meta property="og:title" content="从点子到可交付：Agent Skill 走向真实使用的工程清单">
+  <meta property="og:description" content="需求筛选、工程证据与三个产品化层级。">
+  <meta property="og:url" content="https://carpentry-liu.github.io/blog/from-idea-to-open-source-skill.html">
+  <link rel="canonical" href="https://carpentry-liu.github.io/blog/from-idea-to-open-source-skill.html">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=Noto+Sans+SC:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../styles.css?v=20260831-blog">
+  <title>从点子到可交付：Agent Skill 走向真实使用的工程清单</title>
+</head>
+<body>
+  <a class="skip-link" href="#main">跳到正文</a>
+  <header class="site-header">
+    <div class="container header-inner">
+      <a class="brand" href="../index.html" aria-label="carpentry-liu 首页"><span>carpentry-liu</span></a>
+      <nav aria-label="主导航">
+        <a href="../index.html#projects">项目</a>
+        <a href="index.html">技术博客</a>
+        <a href="https://github.com/carpentry-liu" target="_blank" rel="noreferrer">GitHub <span aria-hidden="true">↗</span></a>
+      </nav>
+    </div>
+  </header>
+
+  <main id="main" class="article-main container">
+    <article>
+      <header class="article-header">
+        <p class="blog-eyebrow">Agent Skill / 产品化</p>
+        <h1>从点子到可交付：Agent Skill 走向真实使用的工程清单</h1>
+        <p class="article-dek">会写 Prompt 不等于完成了工程。一个真正可用的 Skill，需要进入具体工作流，并留下可复现、可验证、可维护的证据。</p>
+        <div class="article-meta"><time datetime="2026-08-31">2026-08-31</time><span>8 分钟阅读</span><span>carpentry-liu</span></div>
+      </header>
+
+      <div class="article-body">
+        <p>我在短时间内做了多个 Skill。最初很容易被“名字有记忆点”“页面能跑起来”带着走，但这两件事都不等于真实可用。复盘之后，我重新设定了验收标准：项目必须回应具体场景，并让没有参与开发的人也能理解、运行和检查结果。</p>
+
+        <h2>为什么主线选择 Agent、MCP 与 Skill</h2>
+        <p>截至 2026 年 8 月，几个公开信号指向同一件事：市场关注点已经从单轮聊天转向能接入工具、理解上下文并完成业务流程的智能体。微软的 <a href="https://devblogs.microsoft.com/microsoft365dev/agents-league-hackathon-2026-enterprise-agents/" target="_blank" rel="noreferrer">Agents League</a> 把企业 Agent、编排、数据接入、安全与实际采用放在一起考察；OpenAI 的 <a href="https://openai.com/es-ES/webmcp-challenge/" target="_blank" rel="noreferrer">WebMCP Challenge</a> 鼓励把网站能力变成 Agent 可调用的工具；Google 公布的 <a href="https://cloud.google.com/blog/topics/developers-practitioners/winners-and-highlights-of-the-gemini-live-agent-challenge" target="_blank" rel="noreferrer">Gemini Live Agent Challenge</a> 有来自 151 个国家的 1,536 个项目；国内的 <a href="https://www.volcengine.com/activity/agent/competition/2026" target="_blank" rel="noreferrer">火山引擎 Agent Cup 2026</a> 也直接面向真实场景与企业命题。</p>
+        <p>这说明工具接入、上下文理解、工作流编排和安全治理正在成为共同问题。但技术热度不是结论：最终仍要回到具体场景，判断系统是否真的减少了重复劳动、错误或协作成本。</p>
+
+        <blockquote><p>先问“谁会在什么流程里使用这个结果”，再问“我能不能用 AI 做出来”。顺序反了，项目很容易只剩演示。</p></blockquote>
+
+        <h2>先过五道真实价值筛选</h2>
+        <ol>
+          <li><strong>问题够具体吗：</strong>它现在是否消耗了明确的人力、时间或风险成本？</li>
+          <li><strong>谁对结果负责：</strong>使用者、审核者和最终决策者分别是谁？</li>
+          <li><strong>交付物明确吗：</strong>最后得到的是报告、工作流、可运行工具，还是一句无法验收的“已优化”？</li>
+          <li><strong>效果能证明吗：</strong>是否有输入输出案例、测试、局限说明和复现步骤？</li>
+          <li><strong>资产能复用吗：</strong>下一次使用能否复用大部分结构，而不是每次从零开始？</li>
+        </ol>
+
+        <h2>六个项目，不应该套用同一种产品形态</h2>
+        <table>
+          <thead><tr><th>项目</th><th>关键差异</th><th>更适合深入的方向</th></tr></thead>
+          <tbody>
+            <tr><td>vibe-project-migrator</td><td>对存量项目做只读审计、规范迁移与证据留存</td><td>工程治理、团队协作、变更审计</td></tr>
+            <tr><td>xianren-zhilu-skill</td><td>先分析用户素材的脸部神态与动作，再匹配人物和热梗</td><td>多模态分析、创作工作流编排</td></tr>
+            <tr><td>pindou-skill</td><td>把任意图片或 3D 参考转成可施工手册，而不只是像素图</td><td>结构分解、约束求解、施工指导</td></tr>
+            <tr><td>agent-skill-podium</td><td>用官方证据维护可追溯赛果，不做来源不明的榜单</td><td>公开数据、来源验证、定时维护</td></tr>
+            <tr><td>shekong-skill</td><td>输出能直接照读的多轮预案与退出边界</td><td>场景建模、对话分支、安全边界</td></tr>
+            <tr><td>moyu-skill</td><td>纯本地模拟 Agent 流式输出，启动后零模型调用</td><td>跨平台终端体验与本地可视化</td></tr>
+          </tbody>
+        </table>
+        <p>这张表最重要的作用是承认差异：有的项目核心是数据可信，有的是多模态分析，有的是复杂约束下的施工转换。只有先找到真正困难的部分，技术选择才不会变成随意堆叠。</p>
+
+        <h2>从原型到产品的三个工程层级</h2>
+        <h3>1. 针对一个流程完成闭环</h3>
+        <p>先围绕单一场景完成输入、处理、人工确认和输出，明确失败时如何退出。这个阶段的目标不是覆盖所有用户，而是验证最关键的技术假设。</p>
+        <h3>2. 抽取可复用的 Skill 与实施手册</h3>
+        <p>当多个案例出现相同结构，再把重复部分抽成模板。需要同时写清输入、输出、适用边界、真实示例和升级路线；否则所谓“复用”只是复制文件。</p>
+        <h3>3. 进入持续运行的垂直系统</h3>
+        <p>当需求频率、数据来源和工作流足够稳定，才适合做成托管服务。此时要补齐账号、权限、隐私、可观测性、成本控制和失败恢复，工程重点已经与 Demo 完全不同。</p>
+
+        <div class="article-callout">
+          <strong>当前研究重点</strong>
+          <p>继续深入 Agent / MCP / Skill 工程化与 AI 项目治理；短视频和拼豆项目则作为垂直案例，用来验证素材分析、工作流编排和复杂交付物生成。</p>
+        </div>
+
+        <h2>开源仓库应该保留怎样的工程证据</h2>
+        <p>“熟悉大模型”很难被验证。一条完整的工程证据链更有意义：</p>
+        <ul>
+          <li>为什么选择这个问题，用户与约束是什么；</li>
+          <li>架构和关键决策如何取舍，哪些能力刻意没有做；</li>
+          <li>怎样处理权限、安全、成本、失败与人工确认；</li>
+          <li>是否有真实输入输出、自动测试、部署地址和版本记录；</li>
+          <li>上线后发现了什么不足，下一轮如何改。</li>
+        </ul>
+        <p>因此，技术博客不会只写教程。每篇文章都要尽量链接真实仓库，公开限制，记录验证结果。重点不是展示使用了多少新名词，而是还原一个判断如何变成可运行结果。</p>
+
+        <h2>接下来写什么</h2>
+        <p>下一阶段会围绕四条线继续：企业 Agent / MCP 的交付清单；AI Coding 的审计与权限治理；短视频与本地工具的差异化产品拆解；以及开源项目如何获得第一批有效反馈。目标不是堆文章数量，而是留下足够具体、可以继续讨论和复现的材料。</p>
+        <p>如果你也在研究 Agent 原型、MCP 工具接入、Skill 工程化或 AI 项目治理，欢迎通过 <a href="https://github.com/carpentry-liu" target="_blank" rel="noreferrer">GitHub</a> 交流具体问题。</p>
+      </div>
+    </article>
+
+    <div class="article-end"><a href="index.html">← 返回木匠手记</a><a href="https://github.com/carpentry-liu" target="_blank" rel="noreferrer">查看全部项目 ↗</a></div>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container footer-inner">
+      <p>© 2026 carpentry-liu</p>
+      <div><a href="../index.html">首页</a><a href="https://github.com/carpentry-liu" target="_blank" rel="noreferrer">GitHub</a></div>
+    </div>
+  </footer>
+</body>
+</html>

@@ -4,18 +4,18 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#fafafa">
-  <meta name="description" content="carpentry-liu（木匠刘师傅）的个人主页，展示 Agent Skill、开发工具和 AI Infra 项目。">
+  <meta name="description" content="carpentry-liu（木匠刘师傅）的个人主页，记录 Agent、MCP、Skill 与 AI Coding 的工程实践。">
   <meta name="author" content="carpentry-liu">
   <meta property="og:type" content="website">
   <meta property="og:title" content="carpentry-liu — 木匠刘师傅">
-  <meta property="og:description" content="开发者个人主页与开源项目。">
+  <meta property="og:description" content="Agent、MCP、Skill 与 AI Coding 的工程实践。">
   <meta property="og:url" content="https://carpentry-liu.github.io/">
   <meta property="og:image" content="https://opengraph.githubassets.com/1/carpentry-liu/carpentry-liu.github.io">
   <link rel="canonical" href="https://carpentry-liu.github.io/">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=Noto+Sans+SC:wght@400;500;600&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="styles.css?v=20260831-blog">
   <title>carpentry-liu — 木匠刘师傅</title>
 </head>
 <body>
@@ -28,7 +28,8 @@
       </a>
       <nav aria-label="主导航">
         <a href="#projects">项目</a>
-        <a href="#updates">最近更新</a>
+        <a href="#blog">技术博客</a>
+        <a class="nav-updates" href="#updates">最近更新</a>
         <a href="https://github.com/carpentry-liu" target="_blank" rel="noreferrer">GitHub <span aria-hidden="true">↗</span></a>
       </nav>
     </div>
@@ -37,7 +38,7 @@
   <main id="main">
     <section class="hero container">
       <h1>木匠刘师傅</h1>
-      <p class="intro">开发者，主要做 AI Agent、Skill 和开发工具，也在整理 AI Infra 相关实践。</p>
+      <p class="intro">开发者，关注 Agent、MCP、Skill 与 AI Coding 工程化。习惯从真实问题出发，把想法做成可运行、可验证、可持续迭代的工具。</p>
       <div class="hero-links">
         <a class="button primary" href="#projects">查看项目</a>
         <a class="button secondary" href="https://github.com/carpentry-liu" target="_blank" rel="noreferrer">GitHub <span aria-hidden="true">↗</span></a>
@@ -134,6 +135,40 @@
           <div class="project-meta"><span><i class="dot dot-python"></i>Python</span><time datetime="2026-08-31">8 月 31 日更新</time></div>
         </article>
       </div>
+    </section>
+
+    <section class="section blog-section container" id="blog" aria-labelledby="blog-title">
+      <div class="section-header">
+        <div>
+          <p class="section-kicker">木匠手记</p>
+          <h2 id="blog-title">技术博客</h2>
+          <p>不做热点复述，记录真实项目里的架构取舍、验证方法和工程边界。</p>
+        </div>
+        <a href="blog/">全部文章 <span aria-hidden="true">↗</span></a>
+      </div>
+
+      <div class="blog-layout">
+        <article class="featured-post">
+          <div class="post-index" aria-hidden="true">01</div>
+          <div class="post-copy">
+            <div class="post-meta"><time datetime="2026-08-31">2026-08-31</time><span>8 分钟阅读</span><span>Agent Skill</span></div>
+            <h3><a href="blog/from-idea-to-open-source-skill.html">从点子到可交付：Agent Skill 走向真实使用的工程清单</a></h3>
+            <p>用 6 个真实项目复盘：怎样识别有效需求、设计可验证的交付物，并把一次性 Prompt 沉淀成可复用的工程资产。</p>
+            <a class="post-read" href="blog/from-idea-to-open-source-skill.html">阅读全文 <span aria-hidden="true">→</span></a>
+          </div>
+        </article>
+
+        <aside class="writing-map" aria-label="博客选题方向">
+          <p class="writing-map__label">长期研究方向</p>
+          <ol>
+            <li><span>01</span><p><strong>Agent / MCP 工程落地</strong><small>从 Demo 到可交付业务流程</small></p></li>
+            <li><span>02</span><p><strong>AI Coding 工程治理</strong><small>面向团队的安全、审计与协作</small></p></li>
+            <li><span>03</span><p><strong>垂直 AI 产品拆解</strong><small>短视频与本地工具如何做出差异</small></p></li>
+            <li><span>04</span><p><strong>开源工程与证据</strong><small>用仓库、数据与复盘还原过程</small></p></li>
+          </ol>
+        </aside>
+      </div>
+
     </section>
 
     <section class="section updates-section container" id="updates" aria-labelledby="updates-title">
