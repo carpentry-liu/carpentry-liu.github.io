@@ -4,19 +4,19 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#fafafa">
-  <meta name="description" content="Physical AI 实战 01：复盘 Mini Duck 在 WSL2 与 GPU 上的强化学习训练、多策略组合、量化验收和 SIM 到真机的边界。">
+  <meta name="description" content="Physical AI 实战 01：Mini Duck 轮滑障碍策略的实验环境、PPO 训练步骤、组合控制方法、量化结果与复现材料。">
   <meta name="author" content="carpentry-liu">
   <meta property="og:type" content="article">
-  <meta property="og:title" content="从会动到可验收：Mini Duck 强化学习复现的第一条证据链">
-  <meta property="og:description" content="一次流畅的仿真不等于训练完成。策略、控制器、验收证据和真机边界必须分开。">
+  <meta property="og:title" content="Mini Duck 轮滑障碍策略：训练方法、组合控制与量化验收">
+  <meta property="og:description" content="基于 WSL2、4096 个并行环境与 50 Hz 控制闭环的可复现实验报告。">
   <meta property="og:url" content="https://carpentry-liu.github.io/blog/physical-ai-01-training-evidence.html">
   <meta property="og:image" content="https://raw.githubusercontent.com/carpentry-liu/mini-duck-lite/main/training/releases/roller-fast-carve-v1/evidence/roller_fast_carve_gate_final_contact_sheet.jpg">
   <link rel="canonical" href="https://carpentry-liu.github.io/blog/physical-ai-01-training-evidence.html">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=Noto+Sans+SC:wght@400;500;600&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="../styles.css?v=20260901-physical-ai">
-  <title>从会动到可验收：Mini Duck 强化学习复现的第一条证据链</title>
+  <link rel="stylesheet" href="../styles.css?v=20260901-paper">
+  <title>Mini Duck 轮滑障碍策略：训练方法、组合控制与量化验收</title>
 </head>
 <body>
   <a class="skip-link" href="#main">跳到正文</a>
@@ -35,89 +35,160 @@
     <article>
       <header class="article-header">
         <p class="article-category"><span class="series-marker">Physical AI 实战 · 01</span> 强化学习复现</p>
-        <h1>从会动到可验收：Mini Duck 强化学习复现的第一条证据链</h1>
-        <p class="article-dek">一次流畅的仿真不等于训练完成。策略学到了什么、路线怎样编排、指标如何验收，以及权重能否进入真机，是四个不同的问题。</p>
-        <div class="article-meta"><time datetime="2026-09-01">2026-09-01</time><span>10 分钟阅读</span><span>carpentry-liu</span></div>
+        <h1>Mini Duck 轮滑障碍策略：训练方法、组合控制与量化验收</h1>
+        <p class="article-dek">在固定 Microduck RL 基线下训练两组 PPO 策略，并与上游轮滑策略组成连续 50 Hz 控制链路。本文记录实验配置、完整步骤、结果和复现边界。</p>
+        <div class="article-meta"><time datetime="2026-09-01">2026-09-01</time><span>12 分钟阅读</span><span>carpentry-liu</span></div>
       </header>
 
       <div class="article-body">
-        <p><a href="https://github.com/carpentry-liu/mini-duck-lite" target="_blank" rel="noreferrer">mini-duck-lite</a> 基于 <a href="https://github.com/pollen-robotics/microduck" target="_blank" rel="noreferrer">Pollen Robotics Microduck</a> 与 <a href="https://github.com/pollen-robotics/microduck_rl" target="_blank" rel="noreferrer">Microduck RL</a> 的公开路线做拓展性复现。目标并不是换一个外壳，而是把仿真、训练、权重、量化评估和硬件接口接成一条可以检查的工程链路。</p>
-
-        <p>这次选了一条看起来很直观的路线：远距离轮滑加速，连续甩弯，带速低头穿杆，出杆后逐渐起身，再完成接近 360° 的旋转和急停歪头。它同时暴露了几个常见误区：画面动了不代表策略学会了；奖励上升不代表动作可用；视频顺畅也不代表可以直接部署到真机。</p>
+        <section class="paper-summary" aria-labelledby="abstract-title">
+          <p class="paper-summary__label">摘要</p>
+          <h2 id="abstract-title">实验结论</h2>
+          <p>本实验在 Windows 11 + WSL2 Ubuntu 24.04.3 环境中，使用 RTX 5060 Ti 和 4096 个并行环境，训练 dynamic crouch 与 spin 两组 PPO 策略。两组策略分别完成约 39.3M 和 49.2M 控制步采样，并与上游 roller 策略组成连续控制器。</p>
+          <ul>
+            <li>机器人在连续物理仿真中完成 19.48 秒、4.631 米的完整路线；</li>
+            <li>入弯速度为 0.535 m/s，穿杆时速度为 0.390 m/s，动作过程没有停住切姿态；</li>
+            <li>最终旋转 344.8°，区域漂移 0.068 米，制动后平面速度降至 0.0002 m/s；</li>
+            <li>checkpoint、ONNX、训练日志、补丁、逐步指标和 SHA-256 清单已形成可复现发布包；</li>
+            <li>当前结论只适用于上游 14DOF 模型的 SIM 证据，不代表独立 10DOF 真机已经可用。</li>
+          </ul>
+          <p class="paper-keywords"><strong>关键词：</strong>Physical AI；Microduck；PPO；MuJoCo；并行仿真；组合控制；Sim2Real</p>
+        </section>
 
         <figure class="article-figure">
           <a href="https://github.com/carpentry-liu/mini-duck-lite/blob/main/training/releases/roller-fast-carve-v1/evidence/roller_fast_carve_gate_final_50fps.mp4" target="_blank" rel="noreferrer">
             <img src="https://raw.githubusercontent.com/carpentry-liu/mini-duck-lite/main/training/releases/roller-fast-carve-v1/evidence/roller_fast_carve_gate_final_contact_sheet.jpg" width="1280" height="720" loading="eager" alt="Mini Duck 连续轮滑障碍秀关键帧：加速、甩弯、动态低头穿杆、旋转与急停">
           </a>
-          <figcaption>19.48 秒连续物理仿真关键帧。点击查看 50 fps 完整视频；不是逐段关键帧动画。</figcaption>
+          <figcaption>图 1　19.48 秒连续物理仿真关键帧：加速、甩弯、动态低头穿杆、旋转与急停。点击查看 1280×720 / 50 fps 完整视频。</figcaption>
         </figure>
 
-        <h2>先把“训练”和“表演”分开</h2>
-        <p>训练阶段解决的是局部运动能力：给定观测和目标速度，策略在每个控制周期输出关节动作。表演阶段解决的是时序与路线：何时直行、何时切入弯道、何时压低身体、何时恢复和制动。二者混在一起，最容易出现一种假象：看上去完成了动作，实际上只是脚本在移动模型或切换姿态。</p>
+        <h2>1. 实验目标与约束</h2>
+        <p><a href="https://github.com/carpentry-liu/mini-duck-lite" target="_blank" rel="noreferrer">mini-duck-lite</a> 基于 <a href="https://github.com/pollen-robotics/microduck" target="_blank" rel="noreferrer">Pollen Robotics Microduck</a> 和 <a href="https://github.com/pollen-robotics/microduck_rl" target="_blank" rel="noreferrer">Microduck RL</a> 的公开路线开展拓展性复现。本次实验目标是完成一条连续路线：</p>
+        <p class="route-line">远距离加速 → 带速甩弯 → 边滑边低头穿杆 → 出杆渐起 → 旋转 → 急停歪头</p>
+        <p>实验采用四项约束：控制频率固定为 50 Hz；全过程使用连续物理仿真；路线脚本不得直接改写机器人 base 位姿；动作不得由关节关键帧拼接。这样可以保证位移、转向和姿态变化均由策略输出经过 MuJoCo 动力学产生。</p>
 
-        <p>本次连续路线组合了三个 50 Hz ONNX 策略：</p>
-        <ul>
-          <li>上游 roller 策略负责前进、制动和头部动作；</li>
-          <li>本机训练的 dynamic crouch 策略负责在保持前进速度时降低身体并穿杆；</li>
-          <li>本机训练的 spin 策略负责弧线转向和最终旋转。</li>
-        </ul>
-        <p>路线控制器只负责目标速度、目标方向和策略切换，不直接改写 base 位姿，也不通过关节关键帧伪造动作。这样才能把“模型真的在物理环境里运动”与“镜头里看起来在运动”区分开。</p>
-
-        <h2>为什么用 4096 个并行环境</h2>
-        <p>强化学习需要大量采样。单个环境按 50 Hz 运行，即使仿真比现实快，收集数千万个控制步仍然很慢。GPU 并行环境把同一策略复制到大量稍有差异的场景中，同时生成经验，再由 PPO 统一更新参数。</p>
+        <h2>2. 实验环境</h2>
 
         <table>
-          <thead><tr><th>训练项</th><th>本次配置</th><th>作用</th></tr></thead>
+          <thead><tr><th>项目</th><th>配置</th><th>设计说明</th></tr></thead>
           <tbody>
-            <tr><td>运行环境</td><td>Windows 11 + WSL2 Ubuntu 24.04.3</td><td>保留 Windows 工作流，同时使用 Linux 训练栈</td></tr>
-            <tr><td>计算设备</td><td>RTX 5060 Ti 16 GB</td><td>并行物理仿真与神经网络更新</td></tr>
-            <tr><td>并行环境</td><td>4096</td><td>提高单位时间内的采样量</td></tr>
-            <tr><td>控制频率</td><td>50 Hz</td><td>与后续端侧闭环的时间尺度一致</td></tr>
-            <tr><td>dynamic crouch</td><td>约 39.3M step，采用 model_400</td><td>带速下蹲与渐进恢复</td></tr>
-            <tr><td>spin</td><td>约 49.2M step，采用 model_500</td><td>弧线转向与旋转</td></tr>
+            <tr><td>操作系统</td><td>Windows 11 + WSL2 Ubuntu 24.04.3 LTS</td><td>训练进程运行在 WSL2；Windows 负责文件与界面管理</td></tr>
+            <tr><td>GPU</td><td>NVIDIA RTX 5060 Ti 16 GB，CUDA 12.9</td><td>物理仿真和 PPO 更新均使用 <code>cuda:0</code></td></tr>
+            <tr><td>随机种子</td><td>42</td><td>固定评估基线，便于比较 checkpoint</td></tr>
+            <tr><td>并行环境</td><td>4096</td><td>并行采样提高单位时间内的有效控制步数量</td></tr>
+            <tr><td>物理步长</td><td>0.005 s</td><td>每秒执行 200 次物理积分</td></tr>
+            <tr><td>策略步长</td><td>0.02 s</td><td>每 4 个物理步执行一次策略，即 50 Hz</td></tr>
+            <tr><td>上游基线</td><td><code>d424a0c899f6...</code></td><td>固定 Microduck RL 版本，避免上游变化影响结果</td></tr>
           </tbody>
         </table>
 
-        <p><code>max_iterations</code> 只是训练上限，不是越大越好。本次 dynamic crouch 在第 442 轮手动停止，spin 在第 514 轮停止，再用固定路线比较 checkpoint。选择 <code>model_400</code> 和 <code>model_500</code> 的依据是动作验收，不是“最后一轮一定最好”。</p>
+        <h2>3. 方法</h2>
 
-        <h2>奖励曲线不能替代动作验收</h2>
-        <p>PPO 的 reward 反映策略对训练目标的综合满足程度，但最终视频关心的是另一组问题：有没有持续前进、转弯是否连贯、穿杆时有没有先停住、恢复动作是否自然、旋转有没有漂出目标区域。它们需要从固定路线的逐控制步日志里单独计算。</p>
+        <h3>3.1 固定源码与验证补丁</h3>
+        <p>第一步固定上游 commit，再应用速度跟踪奖励和连续路线控制器补丁。固定基线可以把后续结果变化归因到本次训练配置，而不是上游代码漂移。</p>
+        <pre><code>git clone https://github.com/pollen-robotics/microduck_rl.git
+cd microduck_rl
+git checkout d424a0c899f6b33cbd3daeb279913134349c0b63
+git apply /path/to/0001-add-forward-speed-tracking-reward.patch
+git apply /path/to/0002-add-continuous-roller-showcase.patch
+uv sync
+uv run pytest tests/test_roller_crouch_cfg.py tests/test_showcase_timeline.py</code></pre>
 
+        <h3>3.2 训练动态低头策略</h3>
+        <p>dynamic crouch 的目标是在降低躯干和头部高度时继续跟踪前进速度。仅奖励“足够低”会得到停住后下蹲的策略，因此训练配置同时保留 forward speed tracking。</p>
+        <pre><code>uv run train Mjlab-RollerCrouch-Flat-MicroDuck \
+  --env.scene.num-envs 4096 \
+  --agent.max_iterations 1000 \
+  --agent.run-name dynamic-gate-4096x1000-20260901</code></pre>
+        <p>训练在第 442 轮手动停止，共完成约 39.3M step。固定路线评估最终采用 <code>model_400.pt</code>。</p>
+
+        <h3>3.3 训练旋转策略</h3>
+        <p>spin 策略负责弧线转向和最终旋转。训练目标同时约束角速度与稳定性，避免只提高旋转速度而持续横向漂移。</p>
+        <pre><code>uv run train Mjlab-Spin-Flat-MicroDuck \
+  --env.scene.num-envs 4096 \
+  --agent.max_iterations 8000 \
+  --agent.run-name spin-showcase-4096x8000-20260901</code></pre>
+        <p>训练在第 514 轮停止，共完成约 49.2M step。固定路线评估采用 <code>model_500.pt</code>。<code>max_iterations</code> 只定义训练上限，checkpoint 仍按固定任务表现选择。</p>
+
+        <h3>3.4 监控训练状态</h3>
+        <pre><code>tensorboard --logdir training/releases/roller-fast-carve-v1/logs --port 6007</code></pre>
         <table>
-          <thead><tr><th>验收项</th><th>结果</th><th>它证明什么</th></tr></thead>
+          <thead><tr><th>指标</th><th>含义</th><th>使用方式</th></tr></thead>
           <tbody>
-            <tr><td>完整路线</td><td>19.48 s / 974 帧 / 4.631 m</td><td>动作发生在同一条连续轨迹中</td></tr>
-            <tr><td>带速入弯</td><td>0.535 m/s</td><td>不是停住后原地转向</td></tr>
-            <tr><td>弯中最低速度</td><td>0.258 m/s</td><td>甩弯过程保持运动</td></tr>
-            <tr><td>连续转向</td><td>92.6° / 0.348 m 弧长</td><td>转向具有实际弧线，不是瞬间改朝向</td></tr>
-            <tr><td>穿杆窗口</td><td>交叉时 0.390 m/s；最低 0.344 m/s</td><td>低头发生在移动过程中</td></tr>
-            <tr><td>最终旋转</td><td>344.8°；漂移 0.068 m</td><td>完成接近一周旋转且位置可控</td></tr>
-            <tr><td>最终速度</td><td>0.0002 m/s</td><td>急停阶段真正收住</td></tr>
+            <tr><td><code>forward_speed_tracking</code></td><td>实际前进速度与目标速度的匹配程度</td><td>判断下蹲时是否仍保持运动</td></tr>
+            <tr><td><code>spin_rate_track</code></td><td>实际角速度对目标角速度的跟踪程度</td><td>判断旋转策略是否学到有效转向</td></tr>
+            <tr><td><code>fell_over</code></td><td>因跌倒提前终止的比例</td><td>防止 reward 上升但稳定性下降</td></tr>
+            <tr><td><code>mean reward</code></td><td>各奖励项加权后的总体趋势</td><td>用于观察收敛，不单独用于选最终权重</td></tr>
+            <tr><td><code>steps/s</code></td><td>单位时间产生的仿真步数量</td><td>检查 GPU 并行采样吞吐是否异常</td></tr>
           </tbody>
         </table>
 
-        <blockquote><p>训练曲线回答“优化过程是否在收敛”；固定路线指标回答“这个动作是否达到使用要求”。两类证据缺一不可。</p></blockquote>
+        <h3>3.5 组合三个策略</h3>
+        <p>训练完成后将 checkpoint 导出为 ONNX。路线控制器依据当前阶段设置速度和方向命令，并切换对应策略；策略输出仍需经过同一套 50 Hz 控制接口进入 MuJoCo。</p>
+        <table>
+          <thead><tr><th>策略</th><th>来源</th><th>负责阶段</th></tr></thead>
+          <tbody>
+            <tr><td><code>upstream_roller.onnx</code></td><td>Pollen Robotics 上游</td><td>直线推进、制动、结束歪头</td></tr>
+            <tr><td><code>dynamic_crouch_model_400.onnx</code></td><td>本机训练</td><td>保持速度下蹲、穿杆、出杆渐起</td></tr>
+            <tr><td><code>spin_model_500.onnx</code></td><td>本机训练</td><td>连续甩弯与最终旋转</td></tr>
+          </tbody>
+        </table>
+        <p>回放脚本同时输出视频、逐控制步 CSV 和汇总 JSON，保证画面与指标来自同一次运行。</p>
+        <pre><code>MUJOCO_GL=egl uv run python scripts/run_roller_showcase.py \
+  --roller /path/to/weights/upstream_roller.onnx \
+  --crouch /path/to/weights/dynamic_crouch_model_400.onnx \
+  --spin /path/to/weights/spin_model_500.onnx \
+  --video roller_fast_carve_gate_final_50fps.mp4 \
+  --metrics roller_fast_carve_gate_final_metrics.csv \
+  --summary roller_fast_carve_gate_final_summary.json \
+  --fps 50 --width 1280 --height 720</code></pre>
 
-        <h2>一个可复现发布包应该留下什么</h2>
-        <p>只上传最终视频，很难判断它来自哪段代码、哪个权重，也无法知道是否能复现。本次发布包同时保存：</p>
-        <ul>
-          <li>PPO checkpoint 与 ONNX 导出文件；</li>
-          <li>TensorBoard event 和终端训练日志；</li>
-          <li>训练环境与展示控制器的源码补丁；</li>
-          <li>逐控制步 CSV、验收 JSON、50 fps 视频和关键帧图；</li>
-          <li>每个载荷的 SHA-256 清单与验证脚本。</li>
-        </ul>
-        <p>完整材料位于 <a href="https://github.com/carpentry-liu/mini-duck-lite/tree/main/training/releases/roller-fast-carve-v1" target="_blank" rel="noreferrer">roller-fast-carve-v1 发布目录</a>，固定版本为 <a href="https://github.com/carpentry-liu/mini-duck-lite/releases/tag/roller-showcase-v1.0.0" target="_blank" rel="noreferrer">roller-showcase-v1.0.0</a>。源码、指标和权重落在同一个版本点上，后续调整奖励、动作约束或路线控制器时才有可比较的基线。</p>
+        <h2>4. 评估协议与结果</h2>
+        <p>评估使用固定 seed 42，在一条连续路线中记录 974 个控制帧。CSV 保存每一步的位置、速度、姿态和当前阶段；汇总脚本从同一份数据计算路径、转角、穿杆速度、旋转角和最终速度。</p>
 
-        <h2>为什么这些权重还不能直接上真机</h2>
-        <p>当前证据等级明确标记为 <strong>SIM</strong>。训练对象是上游 14DOF roller 模型，而项目规划的实体平台是独立 10DOF 硬件。自由度和机械结构不同，意味着关节顺序、观测向量、动作缩放、执行器方向、零位、限位、质量和惯量都可能不同。</p>
+        <table>
+          <thead><tr><th>指标</th><th>实测结果</th><th>结果解释</th></tr></thead>
+          <tbody>
+            <tr><td>完整路线</td><td>19.48 s / 974 帧 / 4.631 m</td><td>全部动作位于同一条连续轨迹</td></tr>
+            <tr><td>入弯 / 弯中最低速度</td><td>0.535 / 0.258 m/s</td><td>转弯前后保持非零速度</td></tr>
+            <tr><td>连续转向</td><td>92.6°；弧长 0.348 m</td><td>机器人沿弧线改变方向</td></tr>
+            <tr><td>穿杆速度</td><td>交叉 0.390 m/s；窗口最低 0.344 m/s</td><td>低头和恢复发生在移动过程中</td></tr>
+            <tr><td>穿杆姿态</td><td>躯干 0.072 m；嘴尖 0.161 m；低头 49.0°</td><td>高度与头部姿态满足穿杆动作</td></tr>
+            <tr><td>下蹲滑行距离</td><td>1.290 m</td><td>动作不是杆下的瞬时姿态切换</td></tr>
+            <tr><td>最终旋转</td><td>344.8°；漂移 0.068 m</td><td>接近完整一周且位置漂移受控</td></tr>
+            <tr><td>最终平面速度</td><td>0.0002 m/s</td><td>制动阶段完成急停</td></tr>
+          </tbody>
+        </table>
 
-        <p>ONNX 只是策略参数的载体，不会自动解决这些差异。进入真机之前，至少还要完成 CPU replay、目标硬件模型重训、执行器与 IMU 标定、HIL 测试，以及吊架、限流、急停和跌倒保护。只有经过实体数据验证的结果才应升级为 HIL 或 REAL 证据。</p>
+        <p>结果表明，组合控制器完成了预定动作顺序，并且在甩弯、穿杆和旋转阶段保持连续运动。训练 reward 用于判断优化过程，结果表中的固定路线指标用于验收最终动作，两者承担不同职责。</p>
 
-        <div class="article-callout article-callout--neutral">
-          <strong>本次工程结论</strong>
-          <p>一个 Physical AI 演示真正有价值的部分，不只是动作本身，而是能说明动作由什么策略产生、用什么指标验收、如何复现，以及它距离真实硬件还有多远。</p>
-        </div>
+        <h2>5. 复现材料</h2>
+        <p><a href="https://github.com/carpentry-liu/mini-duck-lite/tree/main/training/releases/roller-fast-carve-v1" target="_blank" rel="noreferrer">roller-fast-carve-v1 发布目录</a>保存了本次实验的完整输入与输出，固定版本为 <a href="https://github.com/carpentry-liu/mini-duck-lite/releases/tag/roller-showcase-v1.0.0" target="_blank" rel="noreferrer">roller-showcase-v1.0.0</a>。</p>
+        <table>
+          <thead><tr><th>目录或文件</th><th>内容</th><th>复现用途</th></tr></thead>
+          <tbody>
+            <tr><td><code>weights/</code></td><td>PPO checkpoint、对应 ONNX、上游 roller ONNX</td><td>继续训练、离线评估和 50 Hz 回放</td></tr>
+            <tr><td><code>logs/</code></td><td>终端日志、TensorBoard event</td><td>核对 reward、termination、吞吐和 <code>cuda:0</code></td></tr>
+            <tr><td><code>source-patches/</code></td><td>相对固定上游 commit 的两个补丁</td><td>重建任务、奖励、场景和控制器</td></tr>
+            <tr><td><code>evidence/</code></td><td>MP4、截图、逐步 CSV、汇总 JSON</td><td>人眼检查与机器验收</td></tr>
+            <tr><td><code>MANIFEST.json</code></td><td>环境、版本、文件大小和 SHA-256</td><td>验证下载内容和 Git LFS 文件完整性</td></tr>
+          </tbody>
+        </table>
+        <pre><code>python training/releases/roller-fast-carve-v1/verify_release.py</code></pre>
+
+        <h2>6. 仿真到真机的边界</h2>
+        <p>本次证据等级为 <strong>SIM</strong>，对象是上游 14DOF roller 模型；项目规划的实体平台为独立 10DOF 硬件，因此现有 ONNX 不能直接部署。进入真机前需要按顺序完成：</p>
+        <ol>
+          <li>建立与实体关节顺序、质量、惯量和限位一致的 10DOF 仿真模型；</li>
+          <li>重新定义 observation、normalizer、action scale 与控制频率；</li>
+          <li>标定执行器方向、零位、电流限制和 IMU 坐标系；</li>
+          <li>执行 CPU replay 与 Hardware-in-the-Loop 测试；</li>
+          <li>在吊架、急停、限流和跌倒保护条件下进行低速真机验证。</li>
+        </ol>
+        <p>只有实体日志与动作验收通过后，证据等级才能从 SIM 升级为 HIL 或 REAL。</p>
+
+        <h2>7. 结论</h2>
+        <p>本实验完成了两组本地 PPO 策略训练、三个 ONNX 策略的 50 Hz 组合控制，以及一条连续轮滑障碍路线的量化验收。最终结果同时保存视频、逐步数据、训练日志、源码补丁和权重校验信息，能够在固定上游基线下复查。当前成果建立了仿真侧的可复现基线，尚未宣称真机部署完成。</p>
       </div>
     </article>
 
