@@ -15,7 +15,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=Noto+Sans+SC:wght@400;500;600&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="../styles.css?v=20260901-paper">
+  <link rel="stylesheet" href="../styles.css?v=20260901-paper-video">
   <title>Mini Duck 轮滑障碍策略：训练方法、组合控制与量化验收</title>
 </head>
 <body>
@@ -41,25 +41,12 @@
       </header>
 
       <div class="article-body">
-        <section class="paper-summary" aria-labelledby="abstract-title">
-          <p class="paper-summary__label">摘要</p>
-          <h2 id="abstract-title">实验结论</h2>
-          <p>本实验在 Windows 11 + WSL2 Ubuntu 24.04.3 环境中，使用 RTX 5060 Ti 和 4096 个并行环境，训练 dynamic crouch 与 spin 两组 PPO 策略。两组策略分别完成约 39.3M 和 49.2M 控制步采样，并与上游 roller 策略组成连续控制器。</p>
-          <ul>
-            <li>机器人在连续物理仿真中完成 19.48 秒、4.631 米的完整路线；</li>
-            <li>入弯速度为 0.535 m/s，穿杆时速度为 0.390 m/s，动作过程没有停住切姿态；</li>
-            <li>最终旋转 344.8°，区域漂移 0.068 米，制动后平面速度降至 0.0002 m/s；</li>
-            <li>checkpoint、ONNX、训练日志、补丁、逐步指标和 SHA-256 清单已形成可复现发布包；</li>
-            <li>当前结论只适用于上游 14DOF 模型的 SIM 证据，不代表独立 10DOF 真机已经可用。</li>
-          </ul>
-          <p class="paper-keywords"><strong>关键词：</strong>Physical AI；Microduck；PPO；MuJoCo；并行仿真；组合控制；Sim2Real</p>
-        </section>
-
         <figure class="article-figure">
-          <a href="https://github.com/carpentry-liu/mini-duck-lite/blob/main/training/releases/roller-fast-carve-v1/evidence/roller_fast_carve_gate_final_50fps.mp4" target="_blank" rel="noreferrer">
-            <img src="https://raw.githubusercontent.com/carpentry-liu/mini-duck-lite/main/training/releases/roller-fast-carve-v1/evidence/roller_fast_carve_gate_final_contact_sheet.jpg" width="1280" height="720" loading="eager" alt="Mini Duck 连续轮滑障碍秀关键帧：加速、甩弯、动态低头穿杆、旋转与急停">
-          </a>
-          <figcaption>图 1　19.48 秒连续物理仿真关键帧：加速、甩弯、动态低头穿杆、旋转与急停。点击查看 1280×720 / 50 fps 完整视频。</figcaption>
+          <video controls playsinline preload="metadata" poster="https://raw.githubusercontent.com/carpentry-liu/mini-duck-lite/main/training/releases/roller-fast-carve-v1/evidence/roller_fast_carve_gate_final_contact_sheet.jpg" aria-label="Mini Duck 连续轮滑障碍实验视频">
+            <source src="https://media.githubusercontent.com/media/carpentry-liu/mini-duck-lite/main/training/releases/roller-fast-carve-v1/evidence/roller_fast_carve_gate_final_50fps.mp4" type="video/mp4">
+            当前浏览器无法播放视频。<a href="https://github.com/carpentry-liu/mini-duck-lite/blob/main/training/releases/roller-fast-carve-v1/evidence/roller_fast_carve_gate_final_50fps.mp4" target="_blank" rel="noreferrer">打开完整视频</a>。
+          </video>
+          <figcaption>图 1　完整实验效果：19.48 秒连续物理仿真，1280×720 / 50 fps。动作顺序为加速、甩弯、动态低头穿杆、旋转与急停。</figcaption>
         </figure>
 
         <h2>1. 实验目标与约束</h2>
@@ -187,8 +174,6 @@ uv run pytest tests/test_roller_crouch_cfg.py tests/test_showcase_timeline.py</c
         </ol>
         <p>只有实体日志与动作验收通过后，证据等级才能从 SIM 升级为 HIL 或 REAL。</p>
 
-        <h2>7. 结论</h2>
-        <p>本实验完成了两组本地 PPO 策略训练、三个 ONNX 策略的 50 Hz 组合控制，以及一条连续轮滑障碍路线的量化验收。最终结果同时保存视频、逐步数据、训练日志、源码补丁和权重校验信息，能够在固定上游基线下复查。当前成果建立了仿真侧的可复现基线，尚未宣称真机部署完成。</p>
       </div>
     </article>
 
