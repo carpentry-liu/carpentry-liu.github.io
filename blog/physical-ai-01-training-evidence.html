@@ -15,7 +15,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=Noto+Sans+SC:wght@400;500;600&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="../styles.css?v=20260901-paper-video">
+  <link rel="stylesheet" href="../styles.css?v=20260902-physics-video">
   <title>Mini Duck 轮滑障碍策略：训练方法、组合控制与量化验收</title>
 </head>
 <body>
@@ -37,7 +37,7 @@
         <p class="article-category"><span class="series-marker">Physical AI 实战 · 01</span> 强化学习复现</p>
         <h1>Mini Duck 轮滑障碍策略：训练方法、组合控制与量化验收</h1>
         <p class="article-dek">在固定 Microduck RL 基线下训练两组 PPO 策略，并与上游轮滑策略组成连续 50 Hz 控制链路。本文记录实验配置、完整步骤、结果和复现边界。</p>
-        <div class="article-meta"><time datetime="2026-09-01">2026-09-01</time><span>12 分钟阅读</span><span>carpentry-liu</span></div>
+        <div class="article-meta"><time datetime="2026-09-02">2026-09-02 更新</time><span>14 分钟阅读</span><span>carpentry-liu</span></div>
       </header>
 
       <div class="article-body">
@@ -48,6 +48,19 @@
           </video>
           <figcaption>图 1　完整实验效果：19.48 秒连续物理仿真，1280×720 / 50 fps。动作顺序为加速、甩弯、动态低头穿杆、旋转与急停。</figcaption>
         </figure>
+
+        <figure class="article-figure">
+          <video controls playsinline preload="metadata" poster="https://raw.githubusercontent.com/carpentry-liu/mini-duck-lite/main/training/releases/roller-fast-carve-v1/evidence/roller_fast_carve_physics_preview.jpg" aria-label="Mini Duck 轮滑障碍实验物理分析视频">
+            <source src="https://media.githubusercontent.com/media/carpentry-liu/mini-duck-lite/main/training/releases/roller-fast-carve-v1/evidence/roller_fast_carve_physics_overlay_50fps.mp4" type="video/mp4">
+            当前浏览器无法播放视频。<a href="https://github.com/carpentry-liu/mini-duck-lite/blob/main/training/releases/roller-fast-carve-v1/evidence/roller_fast_carve_physics_overlay_50fps.mp4" target="_blank" rel="noreferrer">打开物理分析视频</a>。
+          </video>
+          <figcaption>图 2　物理分析回放：同步显示代表性关节位移、速度、姿态、驱动/惯性/约束力矩、六维传递力与接触载荷。红—蓝摩擦场和扭矩涡旋是由真实离散量生成的派生图层。</figcaption>
+        </figure>
+
+        <div class="article-callout article-callout--neutral">
+          <strong>视频与交互页承担不同用途</strong>
+          <p>MP4 每 2.5 秒自动轮播一个代表性关节；发布包中的交互回放页允许点击 9 个关节，独立查看对应的六维力/力矩时域曲线。全部 974 个控制步同时保存为 JSON 和 CSV。</p>
+        </div>
 
         <h2>1. 实验目标与约束</h2>
         <p><a href="https://github.com/carpentry-liu/mini-duck-lite" target="_blank" rel="noreferrer">mini-duck-lite</a> 基于 <a href="https://github.com/pollen-robotics/microduck" target="_blank" rel="noreferrer">Pollen Robotics Microduck</a> 和 <a href="https://github.com/pollen-robotics/microduck_rl" target="_blank" rel="noreferrer">Microduck RL</a> 的公开路线开展拓展性复现。本次实验目标是完成一条连续路线：</p>
@@ -78,8 +91,12 @@ cd microduck_rl
 git checkout d424a0c899f6b33cbd3daeb279913134349c0b63
 git apply /path/to/0001-add-forward-speed-tracking-reward.patch
 git apply /path/to/0002-add-continuous-roller-showcase.patch
+git apply /path/to/0003-feat-showcase-add-physics-telemetry-overlays.patch
 uv sync
-uv run pytest tests/test_roller_crouch_cfg.py tests/test_showcase_timeline.py</code></pre>
+uv run --with pytest pytest \
+  tests/test_roller_crouch_cfg.py \
+  tests/test_showcase_timeline.py \
+  tests/test_physics_overlay.py</code></pre>
 
         <h3>3.2 训练动态低头策略</h3>
         <p>dynamic crouch 的目标是在降低躯干和头部高度时继续跟踪前进速度。仅奖励“足够低”会得到停住后下蹲的策略，因此训练配置同时保留 forward speed tracking。</p>
@@ -130,6 +147,20 @@ uv run pytest tests/test_roller_crouch_cfg.py tests/test_showcase_timeline.py</c
   --summary roller_fast_carve_gate_final_summary.json \
   --fps 50 --width 1280 --height 720</code></pre>
 
+        <h3>3.6 记录关节与接触物理量</h3>
+        <p>物理分析回放与纯净视频来自同一条确定性路线。关节位移和速度取自 <code>qpos/qvel</code>；驱动力矩取自 <code>qfrc_actuator</code>；惯性力矩由 <code>M(q)qacc</code> 计算；约束力矩取自 <code>qfrc_constraint</code>；关节六维传递量在 <code>mj_rnePostConstraint</code> 后读取 <code>cfrc_int</code>；接触六维力由 <code>mj_contactForce</code> 转换到世界坐标系。</p>
+        <p>MuJoCo 给出的是离散接触与刚体/关节量。画面中的红—蓝摩擦力场由离散切向摩擦力进行高斯插值，扭矩涡旋只编码力矩方向与对数幅值，因此两者均标记为 <code>DERIVED</code>，不作为连续介质场或真机传感器数据。</p>
+        <pre><code>MUJOCO_GL=egl uv run python scripts/run_roller_showcase.py \
+  --roller /path/to/weights/upstream_roller.onnx \
+  --crouch /path/to/weights/dynamic_crouch_model_400.onnx \
+  --spin /path/to/weights/spin_model_500.onnx \
+  --no-video \
+  --analysis-video roller_fast_carve_physics_overlay_50fps.mp4 \
+  --physics-json roller_fast_carve_physics_telemetry.json \
+  --physics-csv roller_fast_carve_physics_telemetry.csv \
+  --viewer-dir physics-viewer \
+  --fps 50 --width 1280 --height 720</code></pre>
+
         <h2>4. 评估协议与结果</h2>
         <p>评估使用固定 seed 42，在一条连续路线中记录 974 个控制帧。CSV 保存每一步的位置、速度、姿态和当前阶段；汇总脚本从同一份数据计算路径、转角、穿杆速度、旋转角和最终速度。</p>
 
@@ -150,14 +181,14 @@ uv run pytest tests/test_roller_crouch_cfg.py tests/test_showcase_timeline.py</c
         <p>结果表明，组合控制器完成了预定动作顺序，并且在甩弯、穿杆和旋转阶段保持连续运动。训练 reward 用于判断优化过程，结果表中的固定路线指标用于验收最终动作，两者承担不同职责。</p>
 
         <h2>5. 复现材料</h2>
-        <p><a href="https://github.com/carpentry-liu/mini-duck-lite/tree/main/training/releases/roller-fast-carve-v1" target="_blank" rel="noreferrer">roller-fast-carve-v1 发布目录</a>保存了本次实验的完整输入与输出，固定版本为 <a href="https://github.com/carpentry-liu/mini-duck-lite/releases/tag/roller-showcase-v1.0.0" target="_blank" rel="noreferrer">roller-showcase-v1.0.0</a>。</p>
+        <p><a href="https://github.com/carpentry-liu/mini-duck-lite/tree/main/training/releases/roller-fast-carve-v1" target="_blank" rel="noreferrer">roller-fast-carve-v1 发布目录</a>保存了本次实验的完整输入与输出，固定版本为 <a href="https://github.com/carpentry-liu/mini-duck-lite/tree/roller-showcase-v1.1.0" target="_blank" rel="noreferrer">roller-showcase-v1.1.0</a>。</p>
         <table>
           <thead><tr><th>目录或文件</th><th>内容</th><th>复现用途</th></tr></thead>
           <tbody>
             <tr><td><code>weights/</code></td><td>PPO checkpoint、对应 ONNX、上游 roller ONNX</td><td>继续训练、离线评估和 50 Hz 回放</td></tr>
             <tr><td><code>logs/</code></td><td>终端日志、TensorBoard event</td><td>核对 reward、termination、吞吐和 <code>cuda:0</code></td></tr>
-            <tr><td><code>source-patches/</code></td><td>相对固定上游 commit 的两个补丁</td><td>重建任务、奖励、场景和控制器</td></tr>
-            <tr><td><code>evidence/</code></td><td>MP4、截图、逐步 CSV、汇总 JSON</td><td>人眼检查与机器验收</td></tr>
+            <tr><td><code>source-patches/</code></td><td>相对固定上游 commit 的三个补丁</td><td>重建任务、奖励、场景、控制器和物理遥测</td></tr>
+            <tr><td><code>evidence/</code></td><td>纯净/分析 MP4、交互页、截图、逐步 JSON/CSV</td><td>人眼检查、关节诊断与机器验收</td></tr>
             <tr><td><code>MANIFEST.json</code></td><td>环境、版本、文件大小和 SHA-256</td><td>验证下载内容和 Git LFS 文件完整性</td></tr>
           </tbody>
         </table>
